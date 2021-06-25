@@ -1,0 +1,35 @@
+Blacklist.csv: List of ob_source_ID's which seems to be spurious due to high PSI value
+
+dr2_random.fits: random sample from  gaiaedr3.dr2_neigbourhood. 
+	used columns:magnitude_difference, angular_distance
+	(only used for creating plots)
+
+gaia_bgs_dr2_neighbours: gaiaedr3.dr2_neighborhood for each BGS in gaia_edr3_bgs, 
+	matched with the gaiadr2.gaia_sources
+	used columns: dr3_source_id, ra, dec, pmra, pmdec, magnitude_difference, angular_distance
+
+gaia_edr3_bgs: gaia data for all Background Stars in rawcands (pm> 100mas/yr) 
+	used columns: source_id, ra, ra_error, dec, dec_error, pmra, pmdec, parallax, 
+	parallax_error, phot_g_mean_mag, astrometric_n_good_obs_al, astrometric_gof_al, 
+	ruwe, astrometric_sigma5d_max
+	
+gaia_edr3_hpms: gaia data for all high-proper-motion Stars (HPMS; pm> 100mas/yr)
+	used columns: source_id, parallax, parallax_over_error, ruwe,
+	phot_g_mean_mag, phot_g_mean_flux_over_error, phot_g_n_obs
+		
+GCNS_cat.fits: Gaia Catalogue of nearby Stars (rejected data), used for validating HPMS 
+	used columns: SOURCE_ID
+	used for validating HPMS
+
+GCNS_reject.fits: Gaia Catalogue of nearby Stars (rejected data), 
+	used columns: GCNS_PROB SOURCE_ID 
+	used for validating HPMS
+
+HPMS_sus.fits: gedr3.spur for each HPMS,
+	used columns: source_id, fidelity_v1
+	only used for comparison in spurious mode. used via python Amlensing -H HPMS_sus.fits -p spur
+
+random_sample.fits: random selection of Gaia sources
+	only used for creating plots
+
+rawcands.fits: raw candidates file 
