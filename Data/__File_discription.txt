@@ -25,9 +25,9 @@ GCNS_reject.fits: Gaia Catalogue of nearby Stars (rejected data),
 	used columns: GCNS_PROB SOURCE_ID 
 	used for validating HPMS
 
-HPMS_sus.fits: gedr3.spur for each HPMS,
+HPMS_spur.fits: gedr3.spur for each HPMS,
 	used columns: source_id, fidelity_v1
-	only used for comparison in spurious mode. used via python Amlensing -H HPMS_sus.fits -p spur
+	only used for comparison in spurious mode. used via python Amlensing -H HPMS_spur.fits -p spur
 
 random_sample.fits: random selection of Gaia sources
 	only used for creating plots
