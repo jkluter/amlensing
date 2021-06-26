@@ -32,4 +32,4 @@ HPMS_sus.fits: gedr3.spur for each HPMS,
 random_sample.fits: random selection of Gaia sources
 	only used for creating plots
 
-rawcands.fits: raw candidates file 
+rawcands.fits: raw candidates file (pairs of lens stars and Baground stars, whit basic astrometric parameters)
