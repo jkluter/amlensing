@@ -356,7 +356,9 @@ def plot_results(result):
 
 def main(n = setup.n_core):
 	tt1 = time.time()
-
+	if not os.path.isdir(Folder + 'Results'):
+		os.mkdir(Folder + 'Results')
+	
 	broadcast()
 	# load and filter Raw Candidates (see raw_data.py, good_BGS.py, good_HPMS.py & Good_Pairs.py)
 	good_raw_cands = raw_data.main()
@@ -411,18 +413,9 @@ def main(n = setup.n_core):
 			prefix = setup.prefix
 			print('Save Figure: '+Folder+'Images/'+im_name+prefix+'.png')
 			f.savefig(Folder+'Images/'+im_name+prefix+'.png', transparent =False)
-			print('Save Figure: '+Folder+'Images/'+im_name+prefix+'.pdf')
+			#print('Save Figure: '+Folder+'Images/'+im_name+prefix+'.pdf')
 			#f.savefig(Folder+'Images/'+im_name+prefix+'.pdf', transparent =False)
-		if os.path.isdir('/Users/jonas/Dropbox/AML_eDR3_2020'):
-			import shutil
-			import glob
-			folder2 = '/Users/jonas/Dropbox/AML_eDR3_2020/Images/'
-			if os.path.isdir(folder2) == False:
-				os.mkdir(folder2)
-			for f in glob.glob(Folder+'Images/*'):
 
-				if os.path.isfile(f):
-					shutil.copyfile(f, folder2+f.split('/')[-1])
 	print('DONE')
 
 
