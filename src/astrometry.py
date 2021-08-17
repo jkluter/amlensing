@@ -108,6 +108,11 @@ def getGCDist_3Vec(pos1, pos2):
 	The distance is in degrees, the input positions are Vektor3.
 	"""
 	scalarprod = (pos1.normalized()) * (pos2.normalized())
+	if hasattr(scalarprod, "__len__"):
+		SC = np.arccos(scalarprod)
+		dif = pos1.normalized() - pos2.normalized()
+		SC[scalarprod>0.9] =  2e0 * np.arcsin(abs(dif[scalarprod>0.9]) / 2e0)
+		return SC/DEG 
 	if scalarprod > 0.9:
 		dif = pos1.normalized() - pos2.normalized()
 		return 2e0 * np.arcsin(abs(dif) / 2e0) / DEG

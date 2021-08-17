@@ -12,8 +12,6 @@ if not all bgs in the list are used
 
 
 import numpy as np
-import matplotlib.pyplot as plt
-
 from astropy.table import Table, MaskedColumn, Column
 
 #sub packages
@@ -22,20 +20,12 @@ from setup import Folder, hpms_file,bgs_file,raw_cands_table,\
 import  good_Pairs as GP 
 import good_HPMS as GH
 import good_BGS as GB
+import plot_functions as pf
 import time
 import os
 tt = [0]
 
 
-import importlib
-def re():
-	import raw_data as RD
-	import good_Pairs as GP
-	import setup as ST
-	GH.re()
-	GP.re()
-	GB.re()
-	importlib.reload(RD)
 
 def broadcast():
 	global hpms_file,bgs_file,raw_cands_table,\
@@ -48,8 +38,11 @@ def broadcast():
 def fill_value(tab):
 	# replace None values with default value
 	# see setup for values
-	for i in mask_values.keys():
-		tab[i].fill_value = mask_values[i]
+	for colname in mask_values.keys():
+		eq1e20 = tab[colname]== 1e20
+
+		tab[colname].fill_value = mask_values[colname]
+		tab[colname][eq1e20] = mask_values[colname]
 	return tab.filled()
 
 def load_raw_pairs():
@@ -62,13 +55,20 @@ def load_raw_pairs():
 		raw_cands = Table.read(Folder + 'Data/' + raw_cands_table, \
 			format = 'fits')
 		# convert metadata to astropy description
-		for j,i in enumerate(raw_cands.keys().copy()):
-			raw_cands[i].description = raw_cands.meta.pop('TCOMM%i'%(j+1))
+		if 'TCOMM1' in raw_cands.meta.keys():
+			for j,i in enumerate(raw_cands.keys().copy()):
+				raw_cands[i].description = raw_cands.meta.pop('TCOMM%i'%(j+1))
 
 	# mask None values	
-	raw_cands.remove_column("roi")
+	if 'roi' in raw_cands.colnames: 
+		raw_cands.remove_column("roi")
+	raw_cands = Table(raw_cands, masked = True, copy = False)
 	for i in raw_cands.colnames:
-		raw_cands[i].mask = np.isnan(raw_cands[i].astype(float))
+		if any(np.isnan(raw_cands[i].astype(float))): 
+			raw_cands[i].mask = np.isnan(raw_cands[i].astype(float))
+		else: 
+			raw_cands[i].mask = raw_cands[i].astype(float) == 1e20
+
 
 def check_hpms():
 	# load whitelist of HPMS source_id's
@@ -138,7 +138,7 @@ def check_bgs():
 	if bgs_file == 'good_BGS.py':
 		# Find good BGS using the good_HPMS.py script and the full gaia table 
 		print('Find good BGS')
-		good_BGS_source_ID, bad_DR2, pmDR2 = GB.main()
+		good_BGS_source_ID, _ , pmDR2 = GB.main()
 		#check if source id in whitlist
 		good_raw_cands_BGS = good_raw_cands_HPMS[np.isin(
 			good_raw_cands_HPMS['ob_source_id'], good_BGS_source_ID)]
@@ -168,7 +168,7 @@ def check_bgs():
 	else: 
 		#do not performe BGS filtering 
 		good_raw_cands_BGS = good_raw_cands_HPMS
-		good_BGS_source_ID, bad_DR2, pmDR2 = GB.main()
+		good_BGS_source_ID, _ , pmDR2 = GB.main()
 		DR2_pm = np.array([pmDR2[i] if i in pmDR2.keys() else [0,0] \
 			for i in good_raw_cands_BGS['ob_source_id']])
 
@@ -183,9 +183,9 @@ def check_bgs():
 def check_pairs():
 	# filter pairs based on the comparison between lens and source data
 	# i.e exclude binary stars 
-
 	if 'good_raw_cands_BGS' not in globals():
 		check_bgs()
+	print('-------------------------')
 	print('Find good Pairs')
 	global good_raw_cands, do_filter
 	# apply filters from good_Pairs.py
@@ -198,7 +198,8 @@ def check_pairs():
 		i+=1
 		if (do_filter//10**i)%10:
 			good_ff = ff(good_raw_cands_BGS)
-			print(ff.__name__, np.sum(good_ff))
+			print(ff.__name__, np.sum(good_ff), np.sum(good_ff==False), 
+				len(good_ff))
 			goodfilter.append([ff.__name__, good_ff])
 			good= good & good_ff
 		else:
@@ -247,53 +248,18 @@ def main(redo = 0):
 	#print('Load RawData:', *(cpt))
 
 	if make_plots:
-		import plt_setup as ps
-		plt.figure("psi")
 		bgs_good = GB.BGS[np.isin(
 			GB.BGS['source_id'], good_raw_cands["ob_source_id"])]
-		ps.semilogy(bgs_good['phot_g_mean_mag'], bgs_good["psi"], \
-			color = ps.yellow, ms = 1,  zorder = 2, \
-			label = 'good BGS')
-			#color = ps.green, ms = 0.5,  zorder = 2
-		leg = plt.legend()
-		for lh in leg.legendHandles: 
-			lh._legmarker.set_alpha(1)
-			lh._legmarker.set_markersize(5)
-		
-		plt.figure("pos_err")
-		ps.semilogy(bgs_good['phot_g_mean_mag'], \
-			np.sqrt(bgs_good['ra_error'] * bgs_good['ra_error'] + \
-			bgs_good['dec_error'] * bgs_good['dec_error']),  \
-			color = ps.green, ms = 0.5, zorder = 2, \
-			label = 'good BGS')
-		leg = plt.legend()
-		for lh in leg.legendHandles: 
-			lh._legmarker.set_alpha(1)
-			lh._legmarker.set_markersize(5)
+		pf.plot_psi_part2(bgs_good)
 
-		fig = plt.figure("sim_px")
-		ps.semilogx(good_raw_cands['parallax'], \
-			good_raw_cands['ob_parallax'],  color = ps.yellow)
-		leg = plt.legend()
+		pf.plot_pos_err(data=bgs_good)
 
-		for lh in leg.legendHandles: 
-			lh._legmarker.set_alpha(1)
-			lh._legmarker.set_markersize(5)
-		plt.ylim([-10,20])
-		plt.pause(0.01)
-		plt.figure("HPMS")
-		cc = good_raw_cands['ob_parallax']>0
-		xlim = plt.xlim()
-		ylim = plt.ylim()
-		ps.loglog(np.sqrt(good_raw_cands[cc]['ob_pmra']**2+good_raw_cands[cc]['ob_pmdec']**2),good_raw_cands[cc]['ob_parallax'],color = ps.green,ms = 0.5, label = 'BGS')
-		plt.xlim([1,xlim[1]])
-		plt.ylim([0.1,ylim[1]])
+		pf.plot_sim_px(data=good_raw_cands)
 
-		leg = plt.legend()
-		for lh in leg.legendHandles: 
-			lh._legmarker.set_alpha(1)
-			lh._legmarker.set_markersize(5)
+		pf.plot_HPMS_part2(good_raw_cands)
 
+	print('-------------------------')
+	print('Good raw cands', len(good_raw_cands) )
 	print('-------------------------')
 
 	return good_raw_cands

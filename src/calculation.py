@@ -18,14 +18,14 @@ def parallel(string):
 	f.close()
 	os.remove(string) # delete temporary file
 
-	print('Find closet approches')
+	if part ==0: print('Find closet approches')
 	result_closest = []
 	cc = np.zeros(6)
 	tt=time.time()
 	# loop over row to finde closest approach
 	for i, row in enumerate(raw_cands):
 		if (i+1)%100 == 0 : # print progress
-			print('Part%i - %i/%i: %im:%is '%(part, i+1,len(raw_cands),\
+			print('Core %i: %i/%i | %im:%is '%(part+1, i+1,len(raw_cands),\
 				(time.time()-tt) // 60,(time.time()-tt) % 60))
 		data,cpt = estimate_Closest_parallax(row)
 		cc += cpt
@@ -57,7 +57,7 @@ def single(raw_cands):
 	return output
 
 def Process_data(raw_cands, result_closest):
-	print('calculate_Effect')
+	print('calculate_Effect', end='\r')
 	#add closest approach at L2 to table	
 	raw_cands['TCA'] = MaskedColumn(result_closest[:,0,0],dtype = 'float64',\
 		unit = 'year', description = 'Epoch of the closest approch')

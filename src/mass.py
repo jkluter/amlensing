@@ -1,10 +1,9 @@
 import numpy as np
+from numpy.polynomial.polynomial import polyval
 from astropy.table import MaskedColumn
 import time
-import plt_setup as ps
 from setup import make_plots
-import matplotlib.pyplot as plt 
-
+import plot_functions as pf
 '''
 determine a approximated mass for the lens based on Gaia data
 '''
@@ -19,6 +18,9 @@ def approx_Mass(tab):
 	tt = []
 	tt.append(time.time())
 	# Absolut Bp & G magnitude
+	no_bprp = \
+		(tab['phot_bp_mean_mag'] == 1e20) | (tab['phot_rp_mean_mag'] == 1e20)\
+		| np.isnan(tab['phot_bp_mean_mag']) | np.isnan(tab['phot_rp_mean_mag']) 
 	B_abs = tab['phot_bp_mean_mag'] + 5 * np.log10(tab['parallax'] / 100)
 	G_abs = tab['phot_g_mean_mag'] + 5 * np.log10(tab['parallax'] / 100)
 	# G - Rp color
@@ -42,12 +44,14 @@ def approx_Mass(tab):
 	tt.append(time.time())
 
 	# Define WD
-	WD = 4. * g_rp * g_rp + 4.5 * g_rp + 7.4 < B_abs
+	WD_Terms = [7.4,4.5,4]
+	WD = (polyval(g_rp,WD_Terms)  < B_abs) & (no_bprp == False)
 	mass[WD] = 0.65
 	mass_err[WD] = 0.15
 	star_type[WD] = 'WD'
 	# Define RG
-	RG = -50. * g_rp * g_rp + 70. * g_rp - 20. > B_abs
+	RG_Terms = [-20,70,-50.]
+	RG = (polyval(g_rp,RG_Terms) > B_abs) & (no_bprp == False)
 
 	mass[RG] = 1
 	mass_err[RG] = 0.5
@@ -66,21 +70,7 @@ def approx_Mass(tab):
 	tt = np.array(tt)
 	cpt = tt[1:] - tt[:-1]
 	if make_plots:
-		plt.figure('CMD')
-		gg = np.where(tab['phot_bp_mean_mag'] != 0)
-		ps.plot(g_rp[gg], B_abs[gg],\
-			'o', color = ps.grey, ms = 0.5, label =  'Candidates', zorder = 0)
-
-		xlim = [-0.5,2.5]
-		ylim = [24,-2]
-		x = np.linspace(*xlim, 1000)
-		plt.plot(x, 4. * x * x + 4.5 * x + 7.4, ps.green, label = 'WD limit',zorder = 4)
-		plt.plot(x, -50. * x * x + 70. * x - 20., ps.red, label = 'RG limit', zorder = 3)
-		plt.xlim(xlim)
-		plt.ylim(ylim)
-		plt.xlabel(r'$G_{RP} - G$ [mag]')
-		plt.ylabel(r'$G_{BP,abs}$ [mag]')
-		plt.pause(0.01)
+		pf.plot_CMD(tab, g_rp,B_abs,WD_Terms,RG_Terms)
 
 	return mass, mass_error, star_type, cpt
 		

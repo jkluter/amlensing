@@ -31,8 +31,8 @@ def calculate_Einsteinradius(tab):
 	cpt = tt[1:] - tt[:-1]
 	return ThetaE, ThetaE_error, cpt
 
-def calc_shift(dist, ThetaE, dist_error = None, ThetaE_error = None, \
-		FL_FS = None):
+def calc_shift(dist, ThetaE, dist_error=None, ThetaE_error=None, \
+		FL_FS=None):
 	'''
 	calculate the expected shift of the center if light 
 	expect dist and ThetaE in the same unit
@@ -66,8 +66,8 @@ def calc_shift(dist, ThetaE, dist_error = None, ThetaE_error = None, \
 			+ np.square(2 * dist / ThetaE**3 * ThetaE_error))
 		return shift,shift_error
 
-def calc_shift_plus(dist, ThetaE, dist_error = None, ThetaE_error = None, \
-		FL_FS = None):
+def calc_shift_plus(dist, ThetaE, dist_error=None, ThetaE_error=None, \
+	FL_FS=None):
 	'''
 	calculate the expected shift of the bright image 
 	expect dist and ThetaE in the same unit
@@ -96,7 +96,7 @@ def calc_shift_plus(dist, ThetaE, dist_error = None, ThetaE_error = None, \
 		return shift_plus, shift_plus_error
 
 
-def calc_shift_lum(dist, ThetaE, dist_error, ThetaE_error, FL_FS):
+def calc_shift_lum(dist, ThetaE, dist_error=None, ThetaE_error=None, FL_FS=0):
 	'''
 	calculate the expected shift of combined center of light
 	including luminous lens effects 
@@ -107,7 +107,10 @@ def calc_shift_lum(dist, ThetaE, dist_error, ThetaE_error, FL_FS):
 	u = dist / ThetaE 
 	# maximum shift at u = sqrt(2) / (1+FL_FS)
 	mm = np.where(u < np.sqrt(2) / (1 + FL_FS))
-	u[mm] = np.sqrt(2) / (1 + FL_FS[mm])
+	if hasattr(FL_FS, "__len__"):
+		u[mm] = np.sqrt(2) / (1 + FL_FS[mm])
+	else: 
+		u[mm] = np.sqrt(2) / (1 + FL_FS)
 
 	#shift in mas 
 	shift_lum = u * ThetaE / (1 + FL_FS) * (1 + FL_FS * (u**2 + 3 \
@@ -195,7 +198,7 @@ def calc_magnification(dist, ThetaE, dist_error, ThetaE_error,FL_FS):
 
 
 def calculate_Effect(tab, approx = False, gaia = False, \
-			error_percentile = False):
+			error_percentile = False, nMC = 50000):
 	"""
 	calculate the microlensing effect for an given distance and Einsteinradius
 	 both in mas
@@ -213,6 +216,7 @@ def calculate_Effect(tab, approx = False, gaia = False, \
 			unit = 'mas', \
 			description ='Approximated maximal astrometric shift of image (+)')
 	else:
+		ti = time.time()
 		if gaia: 
 			suffix = 'L2_'
 			suffix_descr = ' for Lagrange Point L2' 
@@ -223,19 +227,17 @@ def calculate_Effect(tab, approx = False, gaia = False, \
 		# get distance
 		dist = tab[suffix + 'dist']
 		dist_error = tab[suffix + 'dist_error']
-		if error_percentile: 
-			dist_error2 = np.random.normal(dist, dist_error,\
-				(10000,len(dist))).T
-
-			#dist_error2 = np.array([np.random.normal(dist, dist_error) \
-			#	for i in range(1000)]).T
-		# get ThetaE
+		# if error_percentile: 
+		# 	np.random.seed(550095)
+		# 	dist_error2 = np.random.normal(dist, dist_error,\
+		# 		(nMC,len(dist))).T
+		# 
 		ThetaE = tab['ThetaE']
 		ThetaE_error = tab['ThetaE_error']
-		if error_percentile: 
-			ThetaE_error2 = np.random.normal(ThetaE, ThetaE_error, \
-				(10000,len(dist))).T
-
+		# if error_percentile: 
+		# 	np.random.seed(630201)
+		# 	ThetaE_error2 = np.random.normal(ThetaE, ThetaE_error, \
+		# 		(nMC,len(dist))).T
 		# determine Flux Ratio
 		FL_FS = pow(100,(tab['ob_phot_g_mean_mag'] - tab['phot_g_mean_mag'])/5)
 
@@ -243,36 +245,70 @@ def calculate_Effect(tab, approx = False, gaia = False, \
 		# determine normed impact parameter u
 		u = dist / ThetaE
 		if error_percentile: 
-			u_e = dist_error2 / ThetaE_error2 
-			u = np.percentile(u_e, 50, axis = 1)
 
-			u_error_m = np.percentile(u_e, 15.866, axis = 1) \
-				- u
-			u_error_p = np.percentile(u_e, 84.866, axis = 1) \
-				- u
+			u = np.zeros(len(tab))
+			u_error = np.zeros(len(tab))
+			u_error_p = np.zeros(len(tab))
+			u_error_m = np.zeros(len(tab))
+			shift = np.zeros(len(tab))
+			shift_error = np.zeros(len(tab))
+			shift_error_p = np.zeros(len(tab))
+			shift_error_m = np.zeros(len(tab))
+			shift_plus = np.zeros(len(tab))
+			shift_plus_error = np.zeros(len(tab))
+			shift_plus_error_p = np.zeros(len(tab))
+			shift_plus_error_m = np.zeros(len(tab))
+			shift_lum = np.zeros(len(tab))
+			shift_lum_error = np.zeros(len(tab))
+			shift_lum_error_p = np.zeros(len(tab))
+			shift_lum_error_m = np.zeros(len(tab))
+			magnification = np.zeros(len(tab))
+			magnification_error = np.zeros(len(tab))
+			magnification_error_p = np.zeros(len(tab))
+			magnification_error_m = np.zeros(len(tab))
+			np.random.seed(550095)
+			v=np.arange(len(tab))
+			for i in range(int(nMC/10000)):
+				print("calculate_Effect %s %im:%is"%(i, (time.time()-ti) // 60,\
+					(time.time()-ti) % 60))
+				vv = (v<len(tab)/int(nMC/10000)*(i+1)) \
+					& (v>=len(tab)/int(nMC/10000)*i) 
+
+
+				dist_error2 = np.random.normal(dist[vv], dist_error[vv],\
+				(nMC,int(np.sum(vv)))).T
+				ThetaE_error2 = np.random.normal(ThetaE[vv], ThetaE_error[vv], \
+					(nMC,int(np.sum(vv)))).T
+				u_e = dist_error2 / ThetaE_error2
+				u[vv] = np.percentile(u_e, 50, axis = 1)
+
+				u_error_m[vv] = np.percentile(u_e, 15.866, axis = 1) \
+					- u[vv]
+				u_error_p[vv] = np.percentile(u_e, 84.866, axis = 1) \
+					- u[vv]
+				del u_e
+				shift[vv], shift_error_p[vv],shift_error_m[vv] = calc_shift(
+					dist[vv], ThetaE[vv], dist_error2, ThetaE_error2,FL_FS[vv])
+				shift_plus[vv], shift_plus_error_p[vv],shift_plus_error_m[vv]= \
+					calc_shift_plus(dist[vv], ThetaE[vv], dist_error2, \
+					ThetaE_error2, FL_FS[vv])
+				shift_lum[vv], shift_lum_error_p[vv], shift_lum_error_m[vv] = \
+					calc_shift_lum(dist[vv], ThetaE[vv], dist_error2, \
+					ThetaE_error2, FL_FS[vv])
+				magnification[vv], magnification_error_p[vv],\
+					magnification_error_m[vv] =  calc_magnification(
+					dist[vv], ThetaE[vv], dist_error2, ThetaE_error2,FL_FS[vv])
+			
 			u_error = np.maximum(u_error_p, -u_error_m)
-
-			shift, shift_error_p,shift_error_m = calc_shift(dist, ThetaE,\
-				dist_error2, ThetaE_error2,FL_FS)
 			shift_error = np.maximum(shift_error_p, -shift_error_m)
-
-			shift_plus, shift_plus_error_p,shift_plus_error_m = \
-				calc_shift_plus(dist, ThetaE, dist_error2, ThetaE_error2,FL_FS)
 			shift_plus_error = np.maximum(shift_plus_error_p, \
-				-shift_plus_error_m)
-
-			shift_lum, shift_lum_error_p, shift_lum_error_m = \
-				calc_shift_lum(dist, ThetaE, dist_error2, ThetaE_error2, FL_FS)
+					-shift_plus_error_m)
 			shift_lum_error = np.maximum(shift_lum_error_p, -shift_lum_error_m)
-
-			magnification, magnification_error_p,magnification_error_m = \
-				calc_magnification(dist, ThetaE, dist_error2, ThetaE_error2, \
-					FL_FS)
 			magnification_error = np.maximum(magnification_error_p, \
-				-magnification_error_m)
+					-magnification_error_m)
 
 
-						# transfer to Column objects in order to include in 
+			# transfer to Column objects in order to include in 
 			# astropy.table.Table object
 			u = MaskedColumn(u, dtype = 'float64', unit = '', description = \
 				'Closest distance in einstein radii' + suffix_descr)
@@ -356,6 +392,7 @@ def calculate_Effect(tab, approx = False, gaia = False, \
 				magnification_error_m
 
 		else: 
+
 			u_error = u * np.sqrt((dist_error/dist)**2 \
 				+ (ThetaE_error/ThetaE)**2)
 
