@@ -9,8 +9,8 @@ Estimates an assumed mass of the HPMS based on its asolute G magnitude.
 Forecast the motion until 2066 (GaiaeDR3 epoch + 50yrs) and determine the minimum angular separation using a nested intervals algorithm
 
 
-To download the standard files from Klüter et al 2021 use
-: 
+To download the standard files from Klüter et al 2021 use:
+
 python amlensing download_data [-random_sample] [-n] [- comands]
 
 	-random_sample 		download also a random gaia sample. These are only used for plots but not necessary)
