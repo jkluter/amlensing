@@ -132,7 +132,7 @@ def movePm_3Vec(raDeg, decDeg, pmra, pmdec, timeGaia, foreshort = 0):
 	muAbs = np.sqrt(pmra**2 + pmdec**2);
 	muTot = muAbs + 0.5e0 * foreshort * timeGaia;
 	if muAbs < 1e-20: # no proper motion 
-		dirVec = Vector3(cd*ca, cd*sa, sd)
+		dirVec = Vector3(cd*ca+0*timeGaia, cd*sa+0*timeGaia, sd+0*timeGaia)
 		return dirVec
 	# this is according to  
 	dirA = pmra / muAbs;
@@ -155,7 +155,7 @@ def parallax_correction(baryVec, earthVec, parallax):
 
 
 def movePm_parallax(raDeg, decDeg, pmra, pmdec, parallax, timeGaia, \
-		earthVec = None, foreshort = 0, gaia = False):
+		earthVec = None, foreshort = 0, gaia = False, ):
 	"""
 	returns cartesian coordinates for an object with pos ra, dec 
 	and pm pmra after Gaia epoch.

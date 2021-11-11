@@ -29,6 +29,7 @@ bgs_file = 'good_BGS.py'
 HPMS_eDR3_file = 'gaia_edr3_hpms.fits' #all potential HPMS
 GCNS_cat_file = 'GCNS_cat.fits' #Gaia catalogue of nearby stars
 GCNS_reject_file= 'GCNS_reject.fits' #Gaia catalogue of nearby stars, rejected sources
+HPMS_spur_file = 'HPMS_spur.fits' #fidility values from J. Rybizki et al. 2021 (optional)
 
 BGS_eDR3_file = 'gaia_edr3_bgs.fits' #all potential BGS
 #gaiaedr3.dr2_neighbourhood for all BGS
